@@ -34,10 +34,15 @@
 
     <div id="app" class="flex-grow pb-16">
         
-        <header class="max-w-4xl mx-auto pt-16 px-4 text-center">
-            <h1 class="text-4xl font-black text-slate-900 tracking-tight mb-2">
-                HMB <span class="text-mint-600">Agency</span>
-            </h1>
+        <header class="fixed top-0 left-0 right-0 z-40 bg-transparent pointer-events-none">
+            <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between sm:justify-start">
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight pointer-events-auto select-none">
+                    HMB <span class="text-mint-600">Agency</span>
+                </h1>
+            </div>
+        </header>
+
+        <div class="max-w-4xl mx-auto pt-28 px-4 text-center">
             <p class="text-slate-500 text-sm mb-8">Tra cứu công thức Toán cấp 3 thông minh, trực quan và tối giản.</p>
             
             <div class="relative max-w-2xl mx-auto mb-10 shadow-sm rounded-full bg-white border border-slate-200/80 focus-within:border-mint-600 focus-within:ring-2 focus-within:ring-mint-100 transition-all duration-300">
@@ -62,7 +67,7 @@
                     </svg>
                 </button>
             </div>
-        </header>
+        </div>
 
         <nav class="max-w-4xl mx-auto px-4 mb-12">
             <div class="flex justify-center space-x-2 bg-slate-200/60 p-1 rounded-xl max-w-md mx-auto mb-4 text-sm font-medium">
@@ -623,7 +628,7 @@
                         examples: [
                             {
                                 text: "Tính họ nguyên hàm của hàm số $f(x) = x^3$.",
-                                solution: "Áp dụng công thức với $n=3$, ta có ngay kết quả: $\\int x^3 \\, dx = \\frac{x^4}{4} + C$."
+                                solution: "Áp dụng công thức với $n=3$, ta có ngay kết quả: $\\int x^3 \\, dx = \\frac{x4}{4} + C$."
                             },
                             {
                                 text: "Tính tích phân xác định sau: $I = \\int_{1}^{2} x^2 \\, dx$.",
@@ -694,7 +699,7 @@
                         formula: "$$|z| = \\sqrt{a^2 + b^2} \\quad (a, b \\in \\mathbb{R})$$",
                         examples: [
                             {
-                                text: "Tính môđun của số phức $z = 3 - 4i$.",
+                                text: "Tính môđun của số phức $z = 3 - 4 i$.",
                                 solution: "Phần thực $a=3$, phần ảo $b=-4$. Áp dụng công thức: $|z| = \\sqrt{3^2 + (-4)^2} = \\sqrt{9 + 16} = \\sqrt{25} = 5$."
                             },
                             {
