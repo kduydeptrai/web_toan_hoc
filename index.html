@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMB - Sổ Tay Công Thức Toán Học Thông Minh</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mint: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-mint-200 flex flex-col min-h-screen">
+
+    <div id="app" class="flex-grow pb-16">
+        
+        <header class="max-w-4xl mx-auto pt-16 px-4 text-center">
+            <h1 class="text-4xl font-black text-slate-900 tracking-tight mb-2">
+                H<span class="text-mint-600">M</span>B
+            </h1>
+            <p class="text-slate-500 text-sm mb-8">Tra cứu công thức Toán cấp 3 thông minh, trực quan và tối giản.</p>
+            
+            <div class="relative max-w-2xl mx-auto mb-10 shadow-sm rounded-full bg-white border border-slate-200/80 focus-within:border-mint-600 focus-within:ring-2 focus-within:ring-mint-100 transition-all duration-300">
+                <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input 
+                    v-model="searchQuery"
+                    type="text" 
+                    placeholder="Tìm kiếm công thức (ví dụ: đạo hàm mũ, csc, tích phân, htl...)" 
+                    class="w-full pl-12 pr-12 py-4 rounded-full text-slate-700 bg-transparent focus:outline-none text-base"
+                />
+                <button 
+                    v-if="searchQuery" 
+                    @click="searchQuery = ''" 
+                    class="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-slate-600"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <nav class="max-w-4xl mx-auto px-4 mb-12">
+            <div class="flex justify-center space-x-2 bg-slate-200/60 p-1 rounded-xl max-w-md mx-auto mb-4 text-sm font-medium">
+                <button 
+                    v-for="grade in [0, 10, 11, 12]" 
+                    :key="grade"
+                    @click="currentGrade = grade"
+                    :class="['w-full py-2 rounded-lg transition-all', currentGrade === grade ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900']"
+                >
+                    {{ grade === 0 ? 'Tất cả lớp' : 'Lớp ' + grade }}
+                </button>
+            </div>
+
+            <div class="flex justify-center space-x-6 text-sm font-medium border-b border-slate-200">
+                <button 
+                    v-for="branch in branches" 
+                    :key="branch.id"
+                    @click="currentBranch = branch.id"
+                    :class="['pb-3 px-2 border-b-2 transition-all', currentBranch === branch.id ? 'border-mint-600 text-mint-600 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-800']"
+                >
+                    {{ branch.name }}
+                </button>
+            </div>
+        </nav>
+
+        <main class="max-w-6xl mx-auto px-4">
+            <div v-if="filteredFormulas.length === 0" class="text-center py-16 text-slate-400">
+                <svg class="mx-auto h-12 w-12 mb-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p>Không tìm thấy công thức nào phù hợp.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div 
+                    v-for="item in filteredFormulas" 
+                    :key="item.id"
+                    @click="openPopup(item)"
+                    class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-mint-300 transition-all duration-300 cursor-pointer flex flex-col justify-between relative group"
+                >
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-500 rounded">
+                            Lớp {{ item.grade }} • {{ item.branch === 'daiso' ? 'Đại số / Giải tích' : 'Hình học' }}
+                        </span>
+                        <span class="text-slate-300 group-hover:text-mint-500 transition-colors">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <h3 class="font-semibold text-slate-800 text-base mb-4 group-hover:text-mint-700 transition-colors">
+                        {{ item.name }}
+                    </h3>
+
+                    <div 
+                        class="py-6 my-auto text-center text-lg text-slate-900 overflow-x-auto scrollbar-none"
+                        v-html="renderMath(item.formula)"
+                    ></div>
+
+                    <div class="text-center text-[10px] text-slate-400 mt-2 italic tracking-wide">
+                        Bấm vào để xem 2 ví dụ chi tiết
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div 
+            v-if="selectedFormula" 
+            class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            @click.self="closePopup"
+        >
+            <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl relative max-h-[90vh] overflow-y-auto flex flex-col">
+                
+                <button 
+                    @click="closePopup" 
+                    class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-all"
+                >
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-mint-100 text-mint-700 rounded">
+                        Lớp {{ selectedFormula.grade }} • {{ selectedFormula.branch === 'daiso' ? 'Đại số / Giải tích' : 'Hình học' }}
+                    </span>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900 mb-4 pr-8">{{ selectedFormula.name }}</h2>
+
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center text-xl text-slate-900 mb-6 overflow-x-auto">
+                    <div v-html="renderMath(selectedFormula.formula)"></div>
+                </div>
+
+                <div class="space-y-4">
+                    <h4 class="font-bold text-slate-800 text-sm tracking-wide uppercase border-b pb-2 border-slate-100">
+                        Ví dụ minh họa chi tiết
+                    </h4>
+                    
+                    <div 
+                        v-for="(example, index) in selectedFormula.examples" 
+                        :key="index"
+                        class="border border-slate-100 rounded-xl p-4 bg-mint-50/30"
+                    >
+                        <div class="mb-2">
+                            <span class="font-bold text-mint-700 text-xs uppercase tracking-wide block mb-1">Ví dụ {{ index + 1 }}:</span>
+                            <div class="text-slate-700 text-sm leading-relaxed" v-html="renderMath(example.text)"></div>
+                        </div>
+                        <div class="pt-2 border-t border-dashed border-slate-200/60">
+                            <span class="font-bold text-slate-500 text-xs uppercase tracking-wide block mb-1">Lời giải:</span>
+                            <div class="text-slate-600 text-sm leading-relaxed" v-html="renderMath(example.solution)"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="bg-slate-900 text-slate-400 border-t-4 border-mint-600 pt-12 pb-6 w-full mt-auto tracking-wide">
+        <div class="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center border-b border-slate-800/80 pb-8">
+            
+            <div class="text-center md:text-left">
+                <span class="text-2xl font-black text-white tracking-wider">H<span class="text-mint-500">M</span>B</span>
+                <p class="text-xs text-slate-400 mt-2 max-w-sm leading-relaxed">
+                    Hệ thống sổ tay công thức Toán học thông minh giúp tối ưu hóa thời gian tra cứu và học tập hiệu quả cho học sinh THPT.
+                </p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-center md:justify-end gap-4 text-sm">
+                <a href="tel:0855555140" class="flex items-center p-3.5 bg-slate-800/40 border border-slate-800 rounded-xl hover:border-mint-500 hover:bg-slate-800/90 transition-all duration-300 group">
+                    <div class="p-2 bg-mint-500/10 text-mint-500 rounded-lg group-hover:bg-mint-500 group-hover:text-white transition-all duration-300">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3 text-left">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Hotline hỗ trợ</p>
+                        <p class="text-slate-200 font-semibold text-xs group-hover:text-mint-400 transition-colors">0855 555 140</p>
+                    </div>
+                </a>
+                
+                <a href="mailto:hmb.agency.group@gmail.com" class="flex items-center p-3.5 bg-slate-800/40 border border-slate-800 rounded-xl hover:border-mint-500 hover:bg-slate-800/90 transition-all duration-300 group">
+                    <div class="p-2 bg-mint-500/10 text-mint-500 rounded-lg group-hover:bg-mint-500 group-hover:text-white transition-all duration-300">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3 text-left">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Email liên hệ</p>
+                        <p class="text-slate-200 font-semibold text-xs group-hover:text-mint-400 transition-colors break-all">hmb.agency.group@gmail.com</p>
+                    </div>
+                </a>
+            </div>
+            
+        </div>
+        
+        <div class="max-w-6xl mx-auto px-6 pt-6 flex flex-col sm:flex-row justify-between items-center text-[11px] text-slate-500">
+            <p>&copy; 2026 HMB Agency. Mọi quyền được bảo lưu.</p>
+            <p class="mt-2 sm:mt-0 text-slate-600">Powered by <span class="text-slate-500">HMB Tech Team</span></p>
+        </div>
+    </footer>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                // KHO DỮ LIỆU ĐẦY ĐỦ CÁC CÔNG THỨC
+                const formulasData = ref([
+                    // ================= LỚP 10 =================
+                    {
+                        id: 1,
+                        name: "Hệ thức Vi-ét cho phương trình bậc hai",
+                        grade: 10,
+                        branch: "daiso",
+                        formula: "$$\\begin{cases} x_1 + x_2 = -\\frac{b}{a} \\\\ x_1 \\cdot x_2 = \\frac{c}{a} \\end{cases}$$",
+                        examples: [
+                            {
+                                text: "Cho phương trình $x^2 - 5x + 6 = 0$. Không giải phương trình, hãy tính tổng và tích các nghiệm.",
+                                solution: "Ta có các hệ số $a=1, b=-5, c=6$. Áp dụng hệ thức Vi-ét: $x_1 + x_2 = -\\frac{-5}{1} = 5$ và $x_1 \\cdot x_2 = \\frac{6}{1} = 6$."
+                            },
+                            {
+                                text: "Tìm hai số biết tổng của chúng bằng $7$ và tích của chúng bằng $12$.",
+                                solution: "Hai số cần tìm là nghiệm của phương trình bậc hai: $t^2 - 7t + 12 = 0$. Giải phương trình ta được hai số đó là $3$ và $4$."
+                            }
+                        ],
+                        keywords: ["viet", "he thuc viet", "pt bac hai", "tong tich", "nghiem"]
+                    },
+                    {
+                        id: 2,
+                        name: "Bất đẳng thức Cauchy (AM-GM) cho 2 số",
+                        grade: 10,
+                        branch: "daiso",
+                        formula: "$$\\frac{a+b}{2} \\ge \\sqrt{ab} \\quad (\\forall a, b \\ge 0)$$",
+                        examples: [
+                            {
+                                text: "Cho số thực $x > 0$. Tìm giá trị nhỏ nhất của biểu thức $P = x + \\frac{4}{x}$.",
+                                solution: "Áp dụng BĐT Cauchy cho hai số dương $x$ và $\\frac{4}{x}$, ta có: $x + \\frac{4}{x} \\ge 2\\sqrt{x \\cdot \\frac{4}{x}} = 2\\sqrt{4} = 4$. Dấu '=' xảy ra khi $x = 2$."
+                            },
+                            {
+                                text: "Chứng minh rằng với mọi số thực dương $a, b$, ta luôn có $(a+b)(\\frac{1}{a}+\\frac{1}{b}) \\ge 4$.",
+                                solution: "Áp dụng Cauchy cho từng ngoặc: $a+b \\ge 2\\sqrt{ab}$ và $\\frac{1}{a}+\\frac{1}{b} \\ge 2\\sqrt{\\frac{1}{ab}}$. Nhân vế theo vế ta được giá trị vế trái $\\ge 4$."
+                            }
+                        ],
+                        keywords: ["cauchy", "am gm", "bat dang thuc", "bdt", "min max", "gia tri nho nhat"]
+                    },
+                    {
+                        id: 3,
+                        name: "Tọa độ đỉnh và Trục đối xứng của Parabol",
+                        grade: 10,
+                        branch: "daiso",
+                        formula: "$$I\\left(-\\frac{b}{2a}; -\\frac{\\Delta}{4a}\\right) \\quad \\text{Trục đối xứng: } x = -\\frac{b}{2a}$$",
+                        examples: [
+                            {
+                                text: "Tìm tọa độ đỉnh của hàm số bậc hai $y = x^2 - 4x + 3$.",
+                                solution: "Hệ số $a=1, b=-4, c=3 \\Rightarrow \\Delta = (-4)^2 - 4\\cdot1\\cdot3 = 4$. Hoành độ đỉnh $x_I = -\\frac{-4}{2\\cdot1} = 2$, tung độ đỉnh $y_I = -\\frac{4}{4\\cdot1} = -1$. Vậy đỉnh $I(2; -1)$."
+                            },
+                            {
+                                text: "Xác định trục đối xứng của đồ thị hàm số $y = -2x^2 + 8x - 1$.",
+                                solution: "Áp dụng công thức trục đối xứng $x = -\\frac{b}{2a}$, ta có: $x = -\\frac{8}{2 \\cdot (-2)} = 2$."
+                            }
+                        ],
+                        keywords: ["parabol", "dinh parabol", "truc doi xung", "ham so bac hai", "pbl"]
+                    },
+                    {
+                        id: 4,
+                        name: "Tích vô hướng của hai vectơ",
+                        grade: 10,
+                        branch: "hinhhoc",
+                        formula: "$$\\vec{a} \\cdot \\vec{b} = |\\vec{a}| \\cdot |\\vec{b}| \\cdot \\cos(\\vec{a}, \\vec{b})$$",
+                        examples: [
+                            {
+                                text: "Cho hai vectơ $\\vec{a}$ và $\\vec{b}$ có độ dài lần lượt là $3$ và $4$, góc giữa hai vectơ là $60^\\circ$. Tính tích vô hướng.",
+                                solution: "Áp dụng công thức: $\\vec{a} \\cdot \\vec{b} = 3 \\cdot 4 \\cdot \\cos(60^\\circ) = 12 \\cdot 0.5 = 6$."
+                            },
+                            {
+                                text: "Trong mặt phẳng, cho $\\vec{a} = (1; 2)$ và $\\vec{b} = (3; 4)$. Tính tích vô hướng dựa trên tọa độ.",
+                                solution: "Công thức tọa độ: $\\vec{a} \\cdot \\vec{b} = x_1x_2 + y_1y_2 = 1\\cdot3 + 2\\cdot4 = 3 + 8 = 11$."
+                            }
+                        ],
+                        keywords: ["tich vo huong", "vecto", "goc", "do dai", "tvh"]
+                    },
+                    {
+                        id: 5,
+                        name: "Công thức Heron tính diện tích tam giác",
+                        grade: 10,
+                        branch: "hinhhoc",
+                        formula: "$$S = \\sqrt{p(p-a)(p-b)(p-c)} \\quad \\text{với } p = \\frac{a+b+c}{2}$$",
+                        examples: [
+                            {
+                                text: "Tính diện tích tam giác có độ dài ba cạnh lần lượt là $13, 14, 15$.",
+                                solution: "Nửa chu vi $p = \\frac{13+14+15}{2} = 21$. Diện tích $S = \\sqrt{21(21-13)(21-14)(21-15)} = \\sqrt{21 \\cdot 8 \\cdot 7 \\cdot 6} = 84$."
+                            },
+                            {
+                                text: "Một tam giác có ba cạnh $a=5, b=6, c=7$. Tính nửa chu vi và diện tích.",
+                                solution: "Ta có $p = \\frac{5+6+7}{2} = 9$. Diện tích $S = \\sqrt{9(9-5)(9-6)(9-7)} = \\sqrt{9 \\cdot 4 \\cdot 3 \\cdot 2} = 6\\sqrt{6}$."
+                            }
+                        ],
+                        keywords: ["heron", "dien tich", "tam giac", "nuoc chu vi", "dt tg"]
+                    },
+                    {
+                        id: 6,
+                        name: "Phương trình tổng quát của đường thẳng",
+                        grade: 10,
+                        branch: "hinhhoc",
+                        formula: "$$ax + by + c = 0 \\quad (a^2 + b^2 \\neq 0)$$",
+                        examples: [
+                            {
+                                text: "Viết PTTQ của đường thẳng đi qua điểm $M(1; -2)$ và có vectơ pháp tuyến $\\vec{n} = (2; 3)$.",
+                                solution: "Phương trình có dạng: $2(x - 1) + 3(y - (-2)) = 0 \\Leftrightarrow 2x - 2 + 3y + 6 = 0 \\Leftrightarrow 2x + 3y + 4 = 0$."
+                            },
+                            {
+                                text: "Tìm một vectơ pháp tuyến của đường thẳng $\\Delta: 5x - 7y + 12 = 0$.",
+                                solution: "Từ các hệ số đi liền với $x$ và $y$, ta suy ra ngay một vectơ pháp tuyến là $\\vec{n} = (5; -7)$."
+                            }
+                        ],
+                        keywords: ["duong thang", "pt tong quat", "pttq", "phap tuyen", "vecto phap tuyen"]
+                    },
+                    {
+                        id: 7,
+                        name: "Khoảng cách từ một điểm đến đường thẳng",
+                        grade: 10,
+                        branch: "hinhhoc",
+                        formula: "$$d(M, \\Delta) = \\frac{|ax_0 + by_0 + c|}{\\sqrt{a^2 + b^2}}$$",
+                        examples: [
+                            {
+                                text: "Tính khoảng cách từ điểm $M(1; 2)$ đến đường thẳng $\\Delta: 3x + 4y - 1 = 0$.",
+                                solution: "Áp dụng công thức: $d(M, \\Delta) = \\frac{|3\\cdot1 + 4\\cdot2 - 1|}{\\sqrt{3^2 + 4^2}} = \\frac{|3 + 8 - 1|}{5} = \\frac{10}{5} = 2$."
+                            },
+                            {
+                                text: "Tìm khoảng cách từ gốc tọa độ $O(0;0)$ đến đường thẳng $d: x - y + 4 = 0$.",
+                                solution: "Thay tọa độ $(0;0)$ vào công thức: $d(O, d) = \\frac{|0 - 0 + 4|}{\\sqrt{1^2 + (-1)^2}} = \\frac{4}{\\sqrt{2}} = 2\\sqrt{2}$."
+                            }
+                        ],
+                        keywords: ["khoang cach", "diem den duong thang", "kc", "tuyen tính"]
+                    },
+                    {
+                        id: 8,
+                        name: "Công thức tọa độ trung điểm đoạn thẳng",
+                        grade: 10,
+                        branch: "hinhhoc",
+                        formula: "$$x_I = \\frac{x_A + x_B}{2}; \\quad y_I = \\frac{y_A + y_B}{2}$$",
+                        examples: [
+                            {
+                                text: "Cho điểm $A(2; 4)$ và $B(6; 10)$. Tìm tọa độ trung điểm $I$ của đoạn thẳng $AB$.",
+                                solution: "Áp dụng công thức: $x_I = \\frac{2+6}{2} = 4$, $y_I = \\frac{4+10}{2} = 7$. Vậy tọa độ trung điểm là $I(4; 7)$."
+                            },
+                            {
+                                text: "Cho biết trung điểm $I(1; 2)$ và điểm đầu $A(-3; 5)$. Hãy tìm tọa độ điểm cuối $B$.",
+                                solution: "Từ công thức suy ra: $x_B = 2x_I - x_A = 2(1) - (-3) = 5$ và $y_B = 2y_I - y_A = 2(2) - 5 = -1$. Vậy $B(5; -1)$."
+                            }
+                        ],
+                        keywords: ["trung diem", "toa do", "doan thang", "giao diem"]
+                    },
+                    {
+                        id: 9,
+                        name: "Phương trình chính tắc của Elip",
+                        grade: 10,
+                        branch: "hinhhoc",
+                        formula: "$$\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1 \\quad (a > b > 0)$$",
+                        examples: [
+                            {
+                                text: "Cho Elip $(E): \\frac{x^2}{25} + \\frac{y^2}{9} = 1$. Xác định độ dài trục lớn và trục nhỏ.",
+                                solution: "Ta có $a^2 = 25 \\Rightarrow a = 5$, $b^2 = 9 \\Rightarrow b = 3$. Độ dài trục lớn là $2a = 10$, độ dài trục nhỏ là $2b = 6$."
+                            },
+                            {
+                                text: "Tìm tọa độ các tiêu điểm của Elip $(E): \\frac{x^2}{16} + \\frac{y^2}{7} = 1$.",
+                                solution: "Có $a^2=16, b^2=7 \\Rightarrow c^2 = a^2 - b^2 = 16 - 7 = 9 \\Rightarrow c = 3$. Hai tiêu điểm là $F_1(-3; 0)$ và $F_2(3; 0)$."
+                            }
+                        ],
+                        keywords: ["elip", "chinh tac", "pt elip", "tieu diem", "truc lon"]
+                    },
+                    {
+                        id: 10,
+                        name: "Định lý Cosin trong tam giác (Hệ thức lượng)",
+                        grade: 10,
+                        branch: "hinhhoc",
+                        formula: "$$a^2 = b^2 + c^2 - 2bc \\cos A$$",
+                        examples: [
+                            {
+                                text: "Tam giác ABC có các cạnh $b=3, c=4$ và góc $A = 60^\\circ$. Tính độ dài cạnh $a$.",
+                                solution: "Ta có: $a^2 = 3^2 + 4^2 - 2 \\cdot 3 \\cdot 4 \\cdot \\cos 60^\\circ = 9 + 16 - 24 \\cdot 0.5 = 13 \\Rightarrow a = \\sqrt{13}$."
+                            },
+                            {
+                                text: "Tam giác ABC có ba cạnh $a=7, b=5, c=8$. Tính số đo góc $A$.",
+                                solution: "Từ định lý gốc ta suy ra: $\\cos A = \\frac{b^2 + c^2 - a^2}{2bc} = \\frac{5^2 + 8^2 - 7^2}{2 \\cdot 5 \\cdot 8} = \\frac{40}{80} = 0.5 \\Rightarrow A = 60^\\circ$."
+                            }
+                        ],
+                        keywords: ["cos", "cosin", "he thuc luong", "tam giac", "htl"]
+                    },
+
+                    // ================= LỚP 11 =================
+                    {
+                        id: 11,
+                        name: "Cấp số cộng (Số hạng tổng quát)",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$u_n = u_1 + (n-1)d$$",
+                        examples: [
+                            {
+                                text: "Cho cấp số cộng có số hạng đầu $u_1 = 2$ và công sai $d = 3$. Tìm số hạng $u_5$.",
+                                solution: "Áp dụng công thức số hạng tổng quát với $n=5$: $u_5 = 2 + (5-1) \\times 3 = 2 + 12 = 14$."
+                            },
+                            {
+                                text: "Cho cấp số cộng có $u_1 = -5$ và $u_2 = -1$. Tìm công sai $d$ và số hạng tổng quát $u_n$.",
+                                solution: "Công sai $d = u_2 - u_1 = -1 - (-5) = 4$. Số hạng tổng quát là: $u_n = -5 + (n-1)4 = 4n - 9$."
+                            }
+                        ],
+                        keywords: ["cap so cong", "csc", "day so"]
+                    },
+                    {
+                        id: 12,
+                        name: "Cấp số nhân (Số hạng tổng quát)",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$u_n = u_1 \\cdot q^{n-1} \\quad (n \\ge 2)$$",
+                        examples: [
+                            {
+                                text: "Cho cấp số nhân có số hạng đầu $u_1 = 3$ và công bội $q = 2$. Tìm số hạng thứ 4 ($u_4$).",
+                                solution: "Áp dụng công thức: $u_4 = u_1 \\cdot q^{4-1} = 3 \\cdot 2^3 = 3 \\cdot 8 = 24$."
+                            },
+                            {
+                                text: "Một cấp số nhân có $u_1 = 5$ và $u_3 = 20$. Tìm các giá trị có thể có của công bội $q$.",
+                                solution: "Ta có $u_3 = u_1 \\cdot q^2 \\Rightarrow 20 = 5 \\cdot q^2 \\Rightarrow q^2 = 4 \\Rightarrow q = 2$ hoặc $q = -2$."
+                            }
+                        ],
+                        keywords: ["cap so nhan", "csn", "cong boi", "hinh hoc"]
+                    },
+                    {
+                        id: 13,
+                        name: "Tổng n số hạng đầu của Cấp số cộng",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$S_n = \\frac{n(u_1 + u_n)}{2} = \\frac{n[2u_1 + (n-1)d]}{2}$$",
+                        examples: [
+                            {
+                                text: "Tính tổng của 10 số hạng đầu tiên của cấp số cộng biết $u_1 = 1$ và công sai $d = 2$.",
+                                solution: "Áp dụng công thức thứ hai: $S_{10} = \\frac{10 \\cdot [2\\cdot1 + (10-1)\\cdot2]}{2} = 5 \\cdot [2 + 18] = 100$."
+                            },
+                            {
+                                text: "Tính tổng dãy số tự nhiên liên tiếp từ 1 đến 100.",
+                                solution: "Đây là CSC với $u_1=1, u_{100}=100, n=100$. Áp dụng công thức: $S_{100} = \\frac{100(1 + 100)}{2} = 50 \\cdot 101 = 5050$."
+                            }
+                        ],
+                        keywords: ["tong cap so cong", "sn", "tong csc", "chuoi so"]
+                    },
+                    {
+                        id: 14,
+                        name: "Công thức tính số Tổ hợp",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$C_n^k = \\frac{n!}{k!(n-k)!} \\quad (0 \\le k \\le n)$$",
+                        examples: [
+                            {
+                                text: "Một nhóm học sinh có 5 người, cần chọn ra một ban cán sự gồm 3 người. Hỏi có bao nhiêu cách?",
+                                solution: "Vì không phân biệt chức vụ, số cách chọn chính là số tổ hợp chập 3 của 5 phần tử: $C_5^3 = \\frac{5!}{3!(5-3)!} = \\frac{120}{6 \\cdot 2} = 10$ cách."
+                            },
+                            {
+                                text: "Tính giá trị của biểu thức $C_7^2$.",
+                                solution: "Áp dụng công thức trực tiếp: $C_7^2 = \\frac{7!}{2! \\cdot 5!} = \\frac{7 \\cdot 6}{2} = 21$."
+                            }
+                        ],
+                        keywords: ["to hop", "chinh hop", "xac suat", "giai thua", "c n k"]
+                    },
+                    {
+                        id: 15,
+                        name: "Công thức tính số Chỉnh hợp",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$A_n^k = \\frac{n!}{(n-k)!} \\quad (0 \\le k \\le n)$$",
+                        examples: [
+                            {
+                                text: "Có 5 bạn học sinh thi chạy, hỏi có bao nhiêu khả năng cho các vị trí Nhất, Nhì, Ba?",
+                                solution: "Do có sự phân chia thứ hạng (có thứ tự), số khả năng là một chỉnh hợp chập 3 của 5: $A_5^3 = \\frac{5!}{(5-3)!} = \\frac{120}{2} = 60$ cách."
+                            },
+                            {
+                                text: "Tính giá trị của chỉnh hợp $A_6^2$.",
+                                solution: "Áp dụng công thức: $A_6^2 = \\frac{6!}{(6-2)!} = \\frac{6!}{4!} = 6 \\cdot 5 = 30$."
+                            }
+                        ],
+                        keywords: ["chinh hop", "to hop", "sap xep", "a n k"]
+                    },
+                    {
+                        id: 16,
+                        name: "Phương trình lượng giác: Sin x = sin α",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$\\sin x = \\sin \\alpha \\Leftrightarrow \\left[\\begin{aligned} x &= \\alpha + k2\\pi \\\\ x &= \\pi - \\alpha + k2\\pi \\end{aligned}\\right. \\quad (k \\in \\mathbb{Z})$$",
+                        examples: [
+                            {
+                                text: "Giải phương trình lượng giác: $\\sin x = \\frac{1}{2}$.",
+                                solution: "Vì $\\frac{1}{2} = \\sin\\left(\\frac{\\pi}{6}\\right)$, ta có nghiệm: $x = \\frac{\\pi}{6} + k2\\pi$ hoặc $x = \\pi - \\frac{\\pi}{6} + k2\\pi = \\frac{5\\pi}{6} + k2\\pi$ ($k\\in\\mathbb{Z}$)."
+                            },
+                            {
+                                text: "Giải phương trình: $\\sin(2x) = \\sin x$.",
+                                solution: "Theo công thức: $2x = x + k2\\pi \\Leftrightarrow x = k2\\pi$ hoặc $2x = \\pi - x + k2\\pi \\Leftrightarrow 3x = \\pi + k2\\pi \\Leftrightarrow x = \\frac{\\pi}{3} + \\frac{k2\\pi}{3}$."
+                            }
+                        ],
+                        keywords: ["luong giac", "sin", "pt luong giac", "phuong trinh sin"]
+                    },
+                    {
+                        id: 17,
+                        name: "Phương trình lượng giác: Cos x = cos α",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$\\cos x = \\cos \\alpha \\Leftrightarrow x = \\pm \\alpha + k2\\pi \\quad (k \\in \\mathbb{Z})$$",
+                        examples: [
+                            {
+                                text: "Giải phương trình lượng giác: $\\cos x = \\frac{\\sqrt{2}}{2}$.",
+                                solution: "Vì $\\frac{\\sqrt{2}}{2} = \\cos\\left(\\frac{\\pi}{4}\n\\right)$, phương trình có nghiệm là $x = \\pm \\frac{\\pi}{4} + k2\\pi$ ($k\\in\\mathbb{Z}$)."
+                            },
+                            {
+                                text: "Giải phương trình: $\\cos x = -1$.",
+                                solution: "Đặc biệt: $\\cos x = -1 \\Leftrightarrow x = \\pi + k2\\pi$ ($k\\in\\mathbb{Z}$)."
+                            }
+                        ],
+                        keywords: ["cos", "phuong trinh cos", "luong giac", "pt luong giac"]
+                    },
+                    {
+                        id: 18,
+                        name: "Đạo hàm hàm số lượng giác cơ bản",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$(\\sin x)' = \\cos x \\quad \\text{và} \\quad (\\cos x)' = -\\sin x$$",
+                        examples: [
+                            {
+                                text: "Tính đạo hàm của hàm số $y = 2\\sin x + 3\\cos x$.",
+                                solution: "Áp dụng tính chất và công thức đạo hàm cơ bản: $y' = 2(\\sin x)' + 3(\\cos x)' = 2\\cos x - 3\\sin x$."
+                            },
+                            {
+                                text: "Tính đạo hàm hàm số hợp $y = \\sin(5x)$.",
+                                solution: "Áp dụng công thức đạo hàm hàm hợp $(\\sin u)' = u' \\cdot \\cos u$: $y' = (5x)' \\cdot \\cos(5x) = 5\\cos(5x)$."
+                            }
+                        ],
+                        keywords: ["dao ham sin", "dao ham cos", "luong giac", "dh luong giac"]
+                    },
+                    {
+                        id: 19,
+                        name: "Đạo hàm của một Thương (u/v)",
+                        grade: 11,
+                        branch: "daiso",
+                        formula: "$$\\left(\\frac{u}{v}\\right)' = \\frac{u'v - uv'}{v^2} \\quad (v \\neq 0)$$",
+                        examples: [
+                            {
+                                text: "Tính đạo hàm của hàm số $y = \\frac{x-1}{x+1}$.",
+                                solution: "Đặt $u = x-1, v = x+1$. Ta có $u'=1, v'=1$. Quy tắc: $y' = \\frac{1(x+1) - (x-1)1}{(x+1)^2} = \\frac{x+1-x+1}{(x+1)^2} = \\frac{2}{(x+1)^2}$."
+                            },
+                            {
+                                text: "Chứng minh công thức đạo hàm của $y = \\tan x = \\frac{\\sin x}{\\cos x}$.",
+                                solution: "Áp dụng công thức thương: $(\\tan x)' = \\frac{(\\sin x)'\\cos x - \\sin x(\\cos x)'}{\\cos^2 x} = \\frac{\\cos^2 x + \\sin^2 x}{\\cos^2 x} = \\frac{1}{\\cos^2 x}$."
+                            }
+                        ],
+                        keywords: ["dao ham thuong", "u tren v", "dao ham phan so", "dh u/v"]
+                    },
+                    {
+                        id: 20,
+                        name: "Định nghĩa Phép vị tự tâm I tỉ số k",
+                        grade: 11,
+                        branch: "hinhhoc",
+                        formula: "$$V_{(I, k)}(M) = M' \\Leftrightarrow \\vec{IM'} = k \\cdot \\vec{IM}$$",
+                        examples: [
+                            {
+                                text: "Trong mặt phẳng, phép vị tự tâm $O(0;0)$ tỉ số $k=2$ biến điểm $A(1; 3)$ thành điểm $A'$. Tìm tọa độ $A'$.",
+                                solution: "Ta have $\\vec{OA'} = 2\\vec{OA} \\Rightarrow (x_{A'}; y_{A'}) = 2 \\cdot (1; 3) = (2; 6)$. Vậy $A'(2; 6)$."
+                            },
+                            {
+                                text: "Nếu phép vị tự biến điểm $M$ thành $M'$ sao cho $\\vec{IM'} = -3\\vec{IM}$. Tỉ số vị tự $k$ bằng bao nhiêu?",
+                                solution: "Đối chiếu định nghĩa, hệ số đứng trước vectơ là tỉ số vị tự, do đó $k = -3$."
+                            }
+                        ],
+                        keywords: ["vi tu", "phep vi tu", "hinh hoc dong dang", "tam vi tu"]
+                    },
+
+                    // ================= LỚP 12 =================
+                    {
+                        id: 21,
+                        name: "Đạo hàm của hàm số mũ cơ bản",
+                        grade: 12,
+                        branch: "daiso",
+                        formula: "$$(a^x)' = a^x \\ln a \\quad \\text{Đặc biệt: } (e^x)' = e^x$$",
+                        examples: [
+                            {
+                                text: "Tính đạo hàm của hàm số $y = 3^x$.",
+                                solution: "Áp dụng công thức với $a = 3$, ta có: $y' = 3^x \\ln 3$."
+                            },
+                            {
+                                text: "Tính đạo hàm của hàm số hợp $y = e^{2x - 1}$.",
+                                solution: "Áp dụng công thức mở rộng $(e^u)' = u' \\cdot e^u$, ta có: $y' = (2x - 1)' \\cdot e^{2x - 1} = 2e^{2x - 1}$."
+                            }
+                        ],
+                        keywords: ["dao ham", "mu", "dh", "logarit", "e mu x"]
+                    },
+                    {
+                        id: 22,
+                        name: "Tích phân/Nguyên hàm của hàm lũy thừa",
+                        grade: 12,
+                        branch: "daiso",
+                        formula: "$$\\int x^n \\, dx = \\frac{x^{n+1}}{n+1} + C \\quad (n \\neq -1)$$",
+                        examples: [
+                            {
+                                text: "Tính họ nguyên hàm của hàm số $f(x) = x^3$.",
+                                solution: "Áp dụng công thức với $n=3$, ta có ngay kết quả: $\\int x^3 \\, dx = \\frac{x^4}{4} + C$."
+                            },
+                            {
+                                text: "Tính tích phân xác định sau: $I = \\int_{1}^{2} x^2 \\, dx$.",
+                                solution: "Nguyên hàm của $x^2$ là $\\frac{x^3}{3}$. Thế cận từ 1 đến 2: $I = \\left. \\frac{x^3}{3} \\right|_{1}^{2} = \\frac{2^3}{3} - \\frac{1^3}{3} = \\frac{8}{3} - \\frac{1}{3} = \\frac{7}{3}$."
+                            }
+                        ],
+                        keywords: ["tich phan", "tp", "nguyen ham", "luy thua"]
+                    },
+                    {
+                        id: 23,
+                        name: "Công thức biến đổi Logarit của một Tích",
+                        grade: 12,
+                        branch: "daiso",
+                        formula: "$$\\log_a(b \\cdot c) = \\log_a b + \\log_a c \\quad (a, b, c > 0, a \\neq 1)$$",
+                        examples: [
+                            {
+                                text: "Rút gọn biểu thức sau thành một logarit duy nhất: $A = \\log_2 3 + \\log_2 5$.",
+                                solution: "Áp dụng công thức tổng thành tích: $A = \\log_2(3 \\cdot 5) = \\log_2 15$."
+                            },
+                            {
+                                text: "Biết $\\log_a 2 = x$ và $\\log_a 3 = y$. Hãy tính $\\log_a 6$ theo $x$ và $y$.",
+                                solution: "Phân tích số: $6 = 2 \\cdot 3$. Do đó $\\log_a 6 = \\log_a(2 \\cdot 3) = \\log_a 2 + \\log_a 3 = x + y$."
+                            }
+                        ],
+                        keywords: ["logarit", "log", "tich logarit", "bien doi log"]
+                    },
+                    {
+                        id: 24,
+                        name: "Công thức đổi cơ số Logarit",
+                        grade: 12,
+                        branch: "daiso",
+                        formula: "$$\\log_a b = \\frac{\\log_c b}{\\log_c a} \\quad \\text{Hệ quả: } \\log_a b = \\frac{1}{\\log_b a}$$",
+                        examples: [
+                            {
+                                text: "Tính giá trị biểu thức $P = \\log_4 8$ mà không dùng máy tính.",
+                                solution: "Chuyển về cùng cơ số 2: $\\log_4 8 = \\frac{\\log_2 8}{\\log_2 4} = \\frac{3}{2}$."
+                            },
+                            {
+                                text: "Rút gọn tích của hai logarit sau: $M = \\log_3 5 \\cdot \\log_5 9$.",
+                                solution: "Áp dụng tính chất đổi cơ số chéo: $M = \\log_3 5 \\cdot \\frac{\\log_3 9}{\\log_3 5} = \\log_3 9 = 2$."
+                            }
+                        ],
+                        keywords: ["doi co so", "logarit", "log co so", "bien doi logarit"]
+                    },
+                    {
+                        id: 25,
+                        name: "Đạo hàm hàm số Logarit tự nhiên (ln x)",
+                        grade: 12,
+                        branch: "daiso",
+                        formula: "$$(\\ln x)' = \\frac{1}{x} \\quad (x > 0) \\quad \\text{Hàm hợp: } (\\ln u)' = \\frac{u'}{u}$$",
+                        examples: [
+                            {
+                                text: "Tính đạo hàm của hàm số $y = 5\\ln x$.",
+                                solution: "Ta có đạo hàm: $y' = 5 \\cdot (\\ln x)' = \\frac{5}{x}$."
+                            },
+                            {
+                                text: "Tính đạo hàm của hàm số hợp $y = \\ln(x^2 + 3x)$.",
+                                solution: "Áp dụng công thức hàm hợp $\\frac{u'}{u}$: $y' = \\frac{(x^2 + 3x)'}{x^2 + 3x} = \\frac{2x + 3}{x^2 + 3x}$."
+                            }
+                        ],
+                        keywords: ["dao ham ln", "logarit tu nhien", "ln x", "dh ln"]
+                    },
+                    {
+                        id: 26,
+                        name: "Môđun của số phức z = a + bi",
+                        grade: 12,
+                        branch: "daiso",
+                        formula: "$$|z| = \\sqrt{a^2 + b^2} \\quad (a, b \\in \\mathbb{R})$$",
+                        examples: [
+                            {
+                                text: "Tính môđun của số phức $z = 3 - 4i$.",
+                                solution: "Phần thực $a=3$, phần ảo $b=-4$. Áp dụng công thức: $|z| = \\sqrt{3^2 + (-4)^2} = \\sqrt{9 + 16} = \\sqrt{25} = 5$."
+                            },
+                            {
+                                text: "Cho số phức $z$ thỏa mãn $|z| = 2$. Khẳng định hình học nào đúng về tập hợp điểm biểu diễn của $z$?",
+                                solution: "Tập hợp các điểm biểu diễn số phức $z$ có môđun bằng 2 là một đường tròn có tâm tại gốc tọa độ $O(0;0)$ và bán kính $R = 2$."
+                            }
+                        ],
+                        keywords: ["so phuc", "modun", "modun so phuc", "phần thực phần ảo", "sp"]
+                    },
+                    {
+                        id: 27,
+                        name: "Thể tích khối chóp cơ bản",
+                        grade: 12,
+                        branch: "hinhhoc",
+                        formula: "$$V = \\frac{1}{3} B \\cdot h \\quad (B: \\text{diện tích đáy}, h: \\text{chiều cao})$$",
+                        examples: [
+                            {
+                                text: "Tính thể tích khối chóp có chiều cao $h = 6\\text{cm}$ và diện tích mặt đáy $B = 10\\text{cm}^2$.",
+                                solution: "Áp dụng công thức thể tích khối chóp: $V = \\frac{1}{3} \\cdot 10 \\cdot 6 = 20\\text{cm}^3$."
+                            },
+                            {
+                                text: "Cho hình chóp tam giác đều có đáy là tam giác đều diện tích $4\\sqrt{3}$ và cạnh bên vuông góc với đáy có độ dài $5$. Tính $V$.",
+                                solution: "Chiều cao chính là cạnh bên vuông góc $h=5$. Thể tích khối chóp thu được: $V = \\frac{1}{3} \\cdot 4\\sqrt{3} \\cdot 5 = \\frac{20\\sqrt{3}}{3}$."
+                            }
+                        ],
+                        keywords: ["the tich chop", "khoi chop", "hinh chop", "vt", "the tich"]
+                    },
+                    {
+                        id: 28,
+                        name: "Thể tích khối lăng trụ",
+                        grade: 12,
+                        branch: "hinhhoc",
+                        formula: "$$V = B \\cdot h \\quad (B: \\text{diện tích đáy}, h: \\text{chiều cao})$$",
+                        examples: [
+                            {
+                                text: "Một khối lăng trụ tam giác có diện tích đáy bằng $12\\text{cm}^2$ và khoảng cách giữa hai đáy bằng $4\\text{cm}$. Tính thể tích.",
+                                solution: "Khoảng cách giữa hai đáy chính là chiều cao $h=4$. Thể tích hình lăng trụ: $V = B \\cdot h = 12 \\cdot 4 = 48\\text{cm}^3$."
+                            },
+                            {
+                                text: "Tính thể tích khối lập phương có cạnh bằng $3\\text{cm}$ dựa trên công thức lăng trụ.",
+                                solution: "Khối lập phương là lăng trụ đứng có đáy là hình vuông diện tích $B = 3^2 = 9\\text{cm}^2$, chiều cao $h=3\\text{cm}$. Do đó $V = 9 \\cdot 3 = 27\\text{cm}^3$."
+                            }
+                        ],
+                        keywords: ["lang tru", "the tich lang tru", "khoi hop", "lap phuong"]
+                    },
+                    {
+                        id: 29,
+                        name: "Phương trình mặt phẳng trong không gian Oxyz",
+                        grade: 12,
+                        branch: "hinhhoc",
+                        formula: "$$Ax + By + Cz + D = 0 \\quad (A^2 + B^2 + C^2 \\neq 0)$$",
+                        examples: [
+                            {
+                                text: "Viết phương trình mặt phẳng đi qua điểm $M(1; 2; 3)$ và nhận $\\vec{n} = (2; -1; 4)$ làm vectơ pháp tuyến.",
+                                solution: "Phương trình mặt phẳng là: $2(x-1) - 1(y-2) + 4(z-3) = 0 \\Leftrightarrow 2x - 2 - y + 2 + 4z - 12 = 0 \\Leftrightarrow 2x - y + 4z - 12 = 0$."
+                            },
+                            {
+                                text: "Tìm một vectơ pháp tuyến của mặt phẳng $(P): x - 3z + 5 = 0$.",
+                                solution: "Hệ số trước $y$ khuyết (bằng 0). Suy ra vectơ pháp tuyến vuông góc là $\\vec{n} = (1; 0; -3)$."
+                            }
+                        ],
+                        keywords: ["mat phang", "ptmp", "oxyz", "phap tuyen mp", "khong gian"]
+                    },
+                    {
+                        id: 30,
+                        name: "Phương trình mặt cầu trong không gian Oxyz",
+                        grade: 12,
+                        branch: "hinhhoc",
+                        formula: "$$(x-a)^2 + (y-b)^2 + (z-c)^2 = R^2$$",
+                        examples: [
+                            {
+                                text: "Tìm tâm và bán kính của mặt cầu có phương trình $(x-1)^2 + y^2 + (z+3)^2 = 25$.",
+                                solution: "Đối chiếu dạng chính tắc, ta có tâm mặt cầu là $I(1; 0; -3)$ và bán kính mặt cầu là $R = \\sqrt{25} = 5$."
+                            },
+                            {
+                                text: "Viết phương trình mặt cầu tâm $I(2; -1; 4)$ và có bán kính $R = 3$.",
+                                solution: "Ráp trực tiếp vào công thức ta được phương trình: $(x-2)^2 + (y+1)^2 + (z-4)^2 = 9$."
+                            }
+                        ],
+                        keywords: ["mat cau", "ptmc", "ban kinh mat cau", "tam mat cau", "oxyz"]
+                    },
+                    {
+                        id: 31,
+                        name: "Diện tích mặt cầu và Thể tích khối cầu",
+                        grade: 12,
+                        branch: "hinhhoc",
+                        formula: "$$S = 4\\pi R^2 \\quad \\text{và} \\quad V = \\frac{4}{3}\\pi R^3$$",
+                        examples: [
+                            {
+                                text: "Tính diện tích bề mặt của một quả bóng hình cầu có bán kính $R = 3\\text{cm}$.",
+                                solution: "Áp dụng công thức diện tích: $S = 4 \\cdot \\pi \\cdot 3^2 = 36\\pi \\approx 113.1\\text{cm}^2$."
+                            },
+                            {
+                                text: "Tính thể tích khối cầu có bán kính bằng $6\\text{cm}$.",
+                                solution: "Áp dụng công thức thể tích: $V = \\frac{4}{3} \\cdot \\pi \\cdot 6^3 = \\frac{4}{3} \\cdot \\pi \\cdot 216 = 288\\pi \\text{cm}^3$."
+                            }
+                        ],
+                        keywords: ["khoi cau", "hinh cau", "dien tich mat cau", "the tich khoi cau"]
+                    }
+                ]);
+
+                const searchQuery = ref('');
+                const currentGrade = ref(0); 
+                const currentBranch = ref('all');
+                const selectedFormula = ref(null);
+
+                const branches = [
+                    { id: 'all', name: 'Tất cả phân nhánh' },
+                    { id: 'daiso', name: 'Đại số / Giải tích' },
+                    { id: 'hinhhoc', name: 'Hình học' }
+                ];
+
+                // 🛠️ ĐÃ SỬA LỖI TẠI ĐÂY: Thay /\$\.(.*?)\$\$/g thành /\$\$(.*?)\$\$/g
+                const renderMath = (text) => {
+                    if (!text) return '';
+                    
+                    let processed = text.replace(/\$\$(.*?)\$\$/g, (match, p1) => {
+                        try {
+                            return katex.renderToString(p1, { displayMode: true, throwOnError: false });
+                        } catch (e) { return match; }
+                    });
+
+                    processed = processed.replace(/\$(.*?)\$/g, (match, p1) => {
+                        try {
+                            return katex.renderToString(p1, { displayMode: false, throwOnError: false });
+                        } catch (e) { return match; }
+                    });
+
+                    return processed;
+                };
+
+                const cleanText = (str) => {
+                    if (!str) return '';
+                    return str.toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/đ/g, "d")
+                        .trim();
+                };
+
+                const shortKeysMap = {
+                    'dh': 'dao ham',
+                    'tp': 'tich phan',
+                    'csc': 'cap so cong',
+                    'csn': 'cap so nhan',
+                    'htl': 'he thuc luong',
+                    'ptdt': 'duong tron',
+                    'ptmp': 'mat phang',
+                    'ptmc': 'mat cau'
+                };
+
+                const filteredFormulas = computed(() => {
+                    let rawQuery = cleanText(searchQuery.value);
+                    if (shortKeysMap[rawQuery]) {
+                        rawQuery = shortKeysMap[rawQuery];
+                    }
+
+                    return formulasData.value.filter(item => {
+                        if (currentGrade.value !== 0 && item.grade !== currentGrade.value) return false;
+                        if (currentBranch.value !== 'all' && item.branch !== currentBranch.value) return false;
+                        
+                        if (rawQuery) {
+                            const nameMatch = cleanText(item.name).includes(rawQuery);
+                            const keywordMatch = item.keywords.some(k => cleanText(k).includes(rawQuery));
+                            return nameMatch || keywordMatch;
+                        }
+                        return true;
+                    });
+                });
+
+                const openPopup = (item) => {
+                    selectedFormula.value = item;
+                };
+
+                const closePopup = () => {
+                    selectedFormula.value = null;
+                };
+
+                return {
+                    searchQuery,
+                    currentGrade,
+                    currentBranch,
+                    branches,
+                    selectedFormula,
+                    filteredFormulas,
+                    renderMath,
+                    openPopup,
+                    closePopup
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
